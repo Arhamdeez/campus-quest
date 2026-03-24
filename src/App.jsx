@@ -1,3 +1,4 @@
+import { useEffect, useState } from 'react'
 import { BrowserRouter, Navigate, NavLink, Route, Routes } from 'react-router-dom'
 import './App.css'
 import ShapeGrid from './ShapeGrid'
@@ -27,7 +28,31 @@ const eventFeed = [
   ['Volunteer Drive', 'Apr 03, 9:00 AM', 'Campus Lawn', 80],
 ]
 
-function AppShell({ children }) {
+const dummyUsers = [
+  {
+    id: 'u1',
+    name: 'Muhammad Arham Babar',
+    email: 'arham@campus.edu',
+    role: 'Student',
+    points: 0,
+  },
+  {
+    id: 'u2',
+    name: 'Emma Wilson',
+    email: 'emma@campus.edu',
+    role: 'Student',
+    points: 312,
+  },
+  {
+    id: 'u3',
+    name: 'Sarah Johnson',
+    email: 'sarah@campus.edu',
+    role: 'Student',
+    points: 245,
+  },
+]
+
+function AppShell({ children, currentUser, onLogout }) {
   return (
     <div className="page-frame">
       <div className="shapegrid-bg" aria-hidden="true">
@@ -51,6 +76,14 @@ function AppShell({ children }) {
               </NavLink>
             ))}
           </nav>
+          <div className="auth-status">
+            <span>{currentUser ? `Logged in: ${currentUser.name}` : 'Not logged in'}</span>
+            {currentUser ? (
+              <button type="button" className="ghost-btn" onClick={onLogout}>
+                Logout
+              </button>
+            ) : null}
+          </div>
         </header>
         <main>{children}</main>
       </div>
@@ -305,21 +338,45 @@ function LeaderboardPage() {
   )
 }
 
-function ProfilePage() {
+function ProfilePage({ currentUser, onLogin, onLogout, loginError }) {
   return (
     <>
       <Header icon="👤" title="Profile" subtitle="Track your growth and unlock achievements" />
-      <section className="card profile-card">
-        <div className="avatar">MAB</div>
-        <div>
-          <h3>Muhammad Arham Babar</h3>
-          <p>arham@campus.edu</p>
-          <span className="tag">Student • 0 Points</span>
-        </div>
-      </section>
+      {currentUser ? (
+        <section className="card profile-card">
+          <div className="avatar">
+            {currentUser.name
+              .split(' ')
+              .map((part) => part[0])
+              .slice(0, 2)
+              .join('')}
+          </div>
+          <div>
+            <h3>{currentUser.name}</h3>
+            <p>{currentUser.email}</p>
+            <span className="tag">
+              {currentUser.role} • {currentUser.points} Points
+            </span>
+          </div>
+          <button type="button" className="ghost-btn profile-logout" onClick={onLogout}>
+            Logout
+          </button>
+        </section>
+      ) : (
+        <section className="card panel">
+          <h3>Dummy Login</h3>
+          <p>Use email + password to login. (Dummy: any listed email, password `1234`)</p>
+          <form className="login-form" onSubmit={onLogin}>
+            <input name="email" type="email" placeholder="Email" required />
+            <input name="password" type="password" placeholder="Password" required />
+            {loginError ? <small className="error-text">{loginError}</small> : null}
+            <button type="submit">Login</button>
+          </form>
+        </section>
+      )}
       <StatRow
         stats={[
-          { icon: '🏆', value: '0', label: 'Total Points' },
+          { icon: '🏆', value: currentUser ? currentUser.points : '0', label: 'Total Points' },
           { icon: '🔥', value: '0', label: 'Current Streak', tone: 'warn' },
           { icon: '📅', value: '0', label: 'Classes Attended' },
           { icon: '🎉', value: '0', label: 'Events Attended', tone: 'ok' },
@@ -366,9 +423,50 @@ function EventsPage() {
 }
 
 function App() {
+  const [currentUser, setCurrentUser] = useState(() => {
+    const stored = localStorage.getItem('campusquest-current-user')
+    if (!stored) return null
+    try {
+      return JSON.parse(stored)
+    } catch {
+      return null
+    }
+  })
+  const [loginError, setLoginError] = useState('')
+
+  useEffect(() => {
+    if (currentUser) {
+      localStorage.setItem('campusquest-current-user', JSON.stringify(currentUser))
+    } else {
+      localStorage.removeItem('campusquest-current-user')
+    }
+  }, [currentUser])
+
+  const login = (event) => {
+    event.preventDefault()
+    const formData = new FormData(event.currentTarget)
+    const email = String(formData.get('email') || '').trim().toLowerCase()
+    const password = String(formData.get('password') || '')
+
+    const user = dummyUsers.find((item) => item.email.toLowerCase() === email)
+    if (!user || password !== '1234') {
+      setLoginError('Invalid email or password')
+      return
+    }
+
+    setLoginError('')
+    setCurrentUser(user)
+    event.currentTarget.reset()
+  }
+
+  const logout = () => {
+    setCurrentUser(null)
+    setLoginError('')
+  }
+
   return (
     <BrowserRouter>
-      <AppShell>
+      <AppShell currentUser={currentUser} onLogout={logout}>
         <Routes>
           <Route path="/" element={<Navigate to="/dashboard" replace />} />
           <Route path="/dashboard" element={<DashboardPage />} />
@@ -379,7 +477,17 @@ function App() {
           <Route path="/quizzes" element={<QuizzesPage />} />
           <Route path="/rewards" element={<RewardsPage />} />
           <Route path="/feedback" element={<FeedbackPage />} />
-          <Route path="/profile" element={<ProfilePage />} />
+          <Route
+            path="/profile"
+            element={
+              <ProfilePage
+                currentUser={currentUser}
+                onLogin={login}
+                onLogout={logout}
+                loginError={loginError}
+              />
+            }
+          />
         </Routes>
       </AppShell>
     </BrowserRouter>
