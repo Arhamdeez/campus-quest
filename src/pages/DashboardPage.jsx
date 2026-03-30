@@ -1,7 +1,10 @@
 import Header from '../components/Header'
 import StatRow from '../components/StatRow'
+import { useNavigate } from 'react-router-dom'
 
 function DashboardPage({ currentUser }) {
+  const navigate = useNavigate()
+
   return (
     <>
       <Header icon="🏆" title="Student Dashboard" subtitle="Your all-in-one campus engagement center" />
@@ -17,10 +20,18 @@ function DashboardPage({ currentUser }) {
         <article className="card panel">
           <h3>Quick Actions</h3>
           <div className="button-grid">
-            <button type="button">Browse Challenges</button>
-            <button type="button">Join Study Group</button>
-            <button type="button">Take Quiz</button>
-            <button type="button">Explore Rewards</button>
+            <button type="button" onClick={() => navigate('/challenges')}>
+              Browse Challenges
+            </button>
+            <button type="button" onClick={() => navigate('/study-groups')}>
+              Join Study Group
+            </button>
+            <button type="button" onClick={() => navigate('/quizzes')}>
+              Take Quiz
+            </button>
+            <button type="button" onClick={() => navigate('/rewards')}>
+              Explore Rewards
+            </button>
           </div>
         </article>
         <article className="card panel">

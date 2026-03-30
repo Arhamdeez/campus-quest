@@ -1,24 +1,30 @@
 import { NavLink } from 'react-router-dom'
-import ShapeGrid from '../ShapeGrid'
+import Prism from './Prism/Prism'
 import { navLinks } from '../data/mockData'
 
 function AppShell({ children, currentUser }) {
   return (
     <div className="page-frame">
       <div className="shapegrid-bg" aria-hidden="true">
-        <ShapeGrid
-          speed={0.22}
-          direction="diagonal"
-          borderColor="rgba(245, 247, 255, 0.34)"
-          hoverColor="rgba(255, 255, 255, 0.2)"
-          size={16}
-          shape="hexagon"
-          hoverTrailAmount={2}
+        <Prism
+          animationType="rotate"
+          timeScale={0.5}
+          height={3.5}
+          baseWidth={5.5}
+          scale={3.6}
+          hueShift={0}
+          colorFrequency={0.7}
+          noise={0}
+          glow={0.6}
+          bloom={0.7}
+          transparent
         />
       </div>
       <div className="app-shell">
         <header className="topbar card">
-          <div className="brand">CampusQuest</div>
+          <NavLink to="/" className="brand">
+            CampusQuest
+          </NavLink>
           <nav className="nav-list">
             {navLinks.map((item) => (
               <NavLink key={item.to} to={item.to}>

@@ -8,16 +8,23 @@
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+
+  --cq-bg: #0b1020;
+  --cq-surface: rgba(255, 255, 255, 0.06);
+  --cq-surface-2: rgba(255, 255, 255, 0.04);
+  --cq-border: rgba(255, 255, 255, 0.12);
+  --cq-border-strong: rgba(255, 255, 255, 0.18);
+  --cq-text: #f8fafc;
+  --cq-muted: #cbd5e1;
+  --cq-muted-2: #94a3b8;
+  --cq-brand: #4f46e5;
+  --cq-brand-2: #4338ca;
 }
 
 body {
   margin: 0;
-  background:
-    radial-gradient(circle at 12% 12%, rgba(74, 43, 120, 0.55) 0%, transparent 30%),
-    radial-gradient(circle at 86% 14%, rgba(41, 78, 143, 0.48) 0%, transparent 28%),
-    radial-gradient(circle at 80% 80%, rgba(32, 94, 92, 0.3) 0%, transparent 24%),
-    #070a14;
-  color: #e5e7eb;
+  background: var(--cq-bg);
+  color: var(--cq-text);
 }
 
 #root {

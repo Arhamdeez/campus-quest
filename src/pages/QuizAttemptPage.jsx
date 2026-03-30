@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import Header from '../components/Header'
 import { quizCatalog } from '../data/mockData'
@@ -9,7 +9,7 @@ function QuizAttemptPage({ onQuizCompleted }) {
   const quiz = quizCatalog.find((item) => item.id === quizId)
   const [answers, setAnswers] = useState({})
   const [submitted, setSubmitted] = useState(false)
-  const [resultSaved, setResultSaved] = useState(false)
+  const resultSavedRef = useRef(false)
   const answeredCount = Object.keys(answers).length
   const progressPercent = quiz ? Math.round((answeredCount / quiz.questions.length) * 100) : 0
 
@@ -45,16 +45,7 @@ function QuizAttemptPage({ onQuizCompleted }) {
     return { correctCount, totalQuestions, accuracy, earnedPoints, weakTopics, strongTopics, topicStats }
   }, [answers, quiz, submitted])
 
-  if (!quiz) {
-    return (
-      <section className="card panel">
-        <h3>Quiz not found</h3>
-        <button type="button" className="ghost-btn" onClick={() => navigate('/quizzes')}>
-          Back to Quizzes
-        </button>
-      </section>
-    )
-  }
+  const isQuizMissing = !quiz
 
   const handleSubmit = (event) => {
     event.preventDefault()
@@ -63,7 +54,8 @@ function QuizAttemptPage({ onQuizCompleted }) {
   }
 
   useEffect(() => {
-    if (!submitted || !result || resultSaved) return
+    if (!submitted || !result || resultSavedRef.current) return
+    resultSavedRef.current = true
     onQuizCompleted?.({
       id: quiz.id,
       earnedPoints: result.earnedPoints,
@@ -72,12 +64,27 @@ function QuizAttemptPage({ onQuizCompleted }) {
       topicStats: result.topicStats,
       submittedAt: new Date().toISOString(),
     })
-    setResultSaved(true)
-  }, [onQuizCompleted, quiz?.id, result, resultSaved, submitted])
+  }, [onQuizCompleted, quiz?.id, result, submitted])
+
+  useEffect(() => {
+    // Reset for a new attempt/quiz.
+    resultSavedRef.current = false
+  }, [quiz?.id])
 
   const handleAnswer = (questionId, optionIndex) => {
     if (submitted) return
     setAnswers((prev) => ({ ...prev, [questionId]: optionIndex }))
+  }
+
+  if (isQuizMissing) {
+    return (
+      <section className="card panel">
+        <h3>Quiz not found</h3>
+        <button type="button" className="ghost-btn" onClick={() => navigate('/quizzes')}>
+          Back to Quizzes
+        </button>
+      </section>
+    )
   }
 
   return (

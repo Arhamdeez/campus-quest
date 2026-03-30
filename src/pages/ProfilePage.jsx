@@ -1,10 +1,15 @@
 import Header from '../components/Header'
 import StatRow from '../components/StatRow'
 
-function ProfilePage({ currentUser, onLogin, onLogout, loginError }) {
+function ProfilePage({ currentUser, onLogout, notice }) {
   return (
     <>
       <Header icon="👤" title="Profile" subtitle="Track your growth and unlock achievements" />
+      {notice ? (
+        <section className="card panel" style={{ maxWidth: 920, margin: '0 auto' }}>
+          <small className="error-text">{notice}</small>
+        </section>
+      ) : null}
       {currentUser ? (
         <section className="card profile-card">
           <div className="avatar">
@@ -25,18 +30,7 @@ function ProfilePage({ currentUser, onLogin, onLogout, loginError }) {
             Logout
           </button>
         </section>
-      ) : (
-        <section className="card panel">
-          <h3>Dummy Login</h3>
-          <p>Use email + password to login. (Dummy: any listed email, password `1234`)</p>
-          <form className="login-form" onSubmit={onLogin}>
-            <input name="email" type="email" placeholder="Email" required />
-            <input name="password" type="password" placeholder="Password" required />
-            {loginError ? <small className="error-text">{loginError}</small> : null}
-            <button type="submit">Login</button>
-          </form>
-        </section>
-      )}
+      ) : null}
       <StatRow
         stats={[
           { icon: '🏆', value: currentUser ? currentUser.points : '0', label: 'Total Points' },
