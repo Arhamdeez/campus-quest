@@ -643,6 +643,36 @@ button:disabled {
   background: rgba(255, 255, 255, 0.08);
 }
 
+.quiz-card-meta {
+  margin-top: 2px;
+}
+
+.quiz-card-meta small {
+  display: block;
+  color: var(--cq-muted-2);
+  line-height: 1.5;
+}
+
+.quiz-card-footer {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 14px 16px;
+  margin-top: 16px;
+  padding-top: 14px;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.quiz-card-footer .quiz-result-chip {
+  margin: 0;
+}
+
+.quiz-card-footer button {
+  flex-shrink: 0;
+  padding-inline: 20px;
+}
+
 .quiz-form {
   display: grid;
   gap: 12px;

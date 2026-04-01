@@ -150,6 +150,16 @@ export const quizCatalog = [
         correctIndex: 1,
         explanation: 'Hash functions transform keys into bucket indices for fast lookup.',
       },
+      {
+        id: 'q1-4',
+        topic: 'Graphs',
+        question:
+          'For an undirected graph with V vertices and E edges, what is the typical space complexity of an adjacency list?',
+        options: ['O(V)', 'O(E)', 'O(V + E)', 'O(V²)'],
+        correctIndex: 2,
+        explanation:
+          'You store each vertex once and each edge twice (once per endpoint), so storage scales with V plus E.',
+      },
     ],
   },
   {
@@ -207,6 +217,15 @@ export const quizCatalog = [
         options: ['On every render', 'Only on mount', 'Only on unmount', 'Never'],
         correctIndex: 1,
         explanation: 'Empty dependency array means effect runs once after initial mount.',
+      },
+      {
+        id: 'q3-4',
+        topic: 'Forms',
+        question: 'In React, an input whose value is driven by component state (value + onChange) is called:',
+        options: ['An uncontrolled input', 'A controlled component', 'A portal', 'A lazy component'],
+        correctIndex: 1,
+        explanation:
+          'Controlled inputs tie the DOM value to React state so the UI stays the single source of truth.',
       },
     ],
   },

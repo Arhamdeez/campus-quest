@@ -24,20 +24,24 @@ function QuizzesPage({ quizResults }) {
       />
       <section className="grid-two">
         {quizCatalog.map((q) => (
-          <article key={q.id} className="card panel">
+          <article key={q.id} className="card panel quiz-card">
             <h4>{q.title}</h4>
             <p>{q.description}</p>
-            <small>
-              {q.points} pts • {q.duration} • {q.questions.length} questions
-            </small>
-            {quizResults?.[q.id] ? (
-              <small className="quiz-result-chip">
-                Last score: {quizResults[q.id].correctCount}/{quizResults[q.id].totalQuestions}
+            <div className="quiz-card-meta">
+              <small>
+                {q.points} pts • {q.duration} • {q.questions.length} questions
               </small>
-            ) : null}
-            <button type="button" onClick={() => navigate(`/quizzes/${q.id}`)}>
-              {quizResults?.[q.id] ? 'Retake Quiz' : 'Start Quiz'}
-            </button>
+            </div>
+            <div className="quiz-card-footer">
+              {quizResults?.[q.id] ? (
+                <span className="quiz-result-chip">
+                  Last score: {quizResults[q.id].correctCount}/{quizResults[q.id].totalQuestions}
+                </span>
+              ) : null}
+              <button type="button" onClick={() => navigate(`/quizzes/${q.id}`)}>
+                {quizResults?.[q.id] ? 'Retake Quiz' : 'Start Quiz'}
+              </button>
+            </div>
           </article>
         ))}
       </section>
