@@ -11,9 +11,9 @@ export const navLinks = [
 ]
 
 export const leaderboard = [
-  ['Emma Wilson', 312, 15, '6/6', 20],
-  ['Sarah Johnson', 245, 12, '4/6', 15],
-  ['Alex Chen', 198, 8, '3/6', 12],
+  ['Fatima Khan', 312, 15, '6/6', 20],
+  ['Ayesha Malik', 245, 12, '4/6', 15],
+  ['Hassan Ali', 198, 8, '3/6', 12],
   ['Muhammad Arham Babar', 0, 0, '0/6', 0],
 ]
 
@@ -64,10 +64,10 @@ export const initialStudyGroups = [
     schedule: 'Tuesdays 6:00 PM',
     location: 'Library Room 203',
     capacity: 6,
-    members: ['Emma Wilson', 'Alex Chen'],
+    members: ['Fatima Khan', 'Hassan Ali'],
     messages: [
-      { id: 'm1', author: 'Emma Wilson', text: 'Today we will cover graphs and BFS.', time: '6:02 PM' },
-      { id: 'm2', author: 'Alex Chen', text: 'I can bring sample interview questions.', time: '6:06 PM' },
+      { id: 'm1', author: 'Fatima Khan', text: 'Today we will cover graphs and BFS.', time: '6:02 PM' },
+      { id: 'm2', author: 'Hassan Ali', text: 'I can bring sample interview questions.', time: '6:06 PM' },
     ],
   },
   {
@@ -77,9 +77,9 @@ export const initialStudyGroups = [
     schedule: 'Thursday 4:00 PM',
     location: 'Study Hall B',
     capacity: 5,
-    members: ['Emma Wilson'],
+    members: ['Fatima Khan'],
     messages: [
-      { id: 'm1', author: 'Emma Wilson', text: 'Let us revise integration by parts first.', time: '4:03 PM' },
+      { id: 'm1', author: 'Fatima Khan', text: 'Let us revise integration by parts first.', time: '4:03 PM' },
     ],
   },
   {
@@ -89,8 +89,8 @@ export const initialStudyGroups = [
     schedule: 'Friday 5:30 PM',
     location: 'Lab 2',
     capacity: 8,
-    members: ['Sarah Johnson', 'Alex Chen', 'Emma Wilson'],
-    messages: [{ id: 'm1', author: 'Sarah Johnson', text: 'React routing practice tonight.', time: '5:31 PM' }],
+    members: ['Ayesha Malik', 'Hassan Ali', 'Fatima Khan'],
+    messages: [{ id: 'm1', author: 'Ayesha Malik', text: 'React routing practice tonight.', time: '5:31 PM' }],
   },
 ]
 
@@ -104,15 +104,15 @@ export const dummyUsers = [
   },
   {
     id: 'u2',
-    name: 'Emma Wilson',
-    email: 'emma@campus.edu',
+    name: 'Fatima Khan',
+    email: 'fatima@campus.edu',
     role: 'Student',
     points: 312,
   },
   {
     id: 'u3',
-    name: 'Sarah Johnson',
-    email: 'sarah@campus.edu',
+    name: 'Ayesha Malik',
+    email: 'ayesha@campus.edu',
     role: 'Student',
     points: 245,
   },

@@ -1,10 +1,54 @@
+import { useEffect, useRef } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import Header from '../components/Header'
+import { FALLBACK_LIVE_LINES, LIVE_CHAT_LINES_BY_GROUP } from '../data/studyGroupLiveChat'
 
-function StudyGroupChatPage({ currentUser, groups, onJoinGroup, onLeaveGroup, onSendMessage }) {
+function StudyGroupChatPage({
+  currentUser,
+  groups,
+  onJoinGroup,
+  onLeaveGroup,
+  onSendMessage,
+  onSimulatedMessage,
+}) {
   const { groupId } = useParams()
   const navigate = useNavigate()
   const group = groups.find((item) => item.id === groupId)
+  const listEndRef = useRef(null)
+
+  /** While chat is open, other members post scripted lines on a staggered timer (demo). */
+  useEffect(() => {
+    if (!group || !currentUser) return
+    const joined = group.members.includes(currentUser.name)
+    if (!joined) return
+
+    const others = group.members.filter((m) => m !== currentUser.name)
+    if (others.length === 0) return
+
+    const pool = LIVE_CHAT_LINES_BY_GROUP[group.id] || FALLBACK_LIVE_LINES
+    let lineIndex = 0
+    let timeoutId = null
+
+    const run = () => {
+      const author = others[lineIndex % others.length]
+      const text = pool[lineIndex % pool.length]
+      lineIndex += 1
+      onSimulatedMessage(group.id, { author, text })
+      const delay = 2500 + Math.random() * 4500
+      timeoutId = window.setTimeout(run, delay)
+    }
+
+    timeoutId = window.setTimeout(run, 900 + Math.random() * 900)
+    return () => {
+      if (timeoutId) window.clearTimeout(timeoutId)
+    }
+  }, [group?.id, group?.members, currentUser?.name, onSimulatedMessage])
+
+  useEffect(() => {
+    if (!group || !currentUser) return
+    if (!group.members.includes(currentUser.name)) return
+    listEndRef.current?.scrollIntoView({ behavior: 'smooth' })
+  }, [group?.messages?.length, currentUser?.name])
 
   if (!group) {
     return (
@@ -64,7 +108,10 @@ function StudyGroupChatPage({ currentUser, groups, onJoinGroup, onLeaveGroup, on
             </div>
             <div className="chat-list">
               {group.messages.map((message) => (
-                <article key={message.id} className="chat-item">
+                <article
+                  key={message.id}
+                  className={`chat-item ${message.author === currentUser.name ? 'chat-item--self' : ''}`}
+                >
                   <div className="chat-meta">
                     <strong>{message.author}</strong>
                     <small>{message.time}</small>
@@ -72,10 +119,11 @@ function StudyGroupChatPage({ currentUser, groups, onJoinGroup, onLeaveGroup, on
                   <p>{message.text}</p>
                 </article>
               ))}
+              <div ref={listEndRef} className="chat-list-end" aria-hidden />
             </div>
 
             <form className="chat-form" onSubmit={handleChatSubmit}>
-              <input name="message" placeholder="Write a message..." />
+              <input name="message" placeholder="Write a message..." autoComplete="off" />
               <button type="submit">Send</button>
             </form>
           </>

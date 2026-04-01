@@ -16,10 +16,11 @@ function LoginPage({ mode = 'login', onLogin, onSignup, error }) {
     const formData = new FormData(formEl)
     const email = String(formData.get('email') || '').trim().toLowerCase()
     const password = String(formData.get('password') || '')
+    const fullName = localMode === 'signup' ? String(formData.get('name') || '').trim() : ''
 
     setSubmitting(true)
     try {
-      if (localMode === 'signup') await onSignup?.({ email, password })
+      if (localMode === 'signup') await onSignup?.({ email, password, name: fullName })
       else await onLogin?.({ email, password })
       formEl?.reset?.()
     } finally {
@@ -53,6 +54,15 @@ function LoginPage({ mode = 'login', onLogin, onSignup, error }) {
         </div>
 
         <form className="login-form" onSubmit={handleSubmit}>
+          {localMode === 'signup' ? (
+            <input
+              name="name"
+              type="text"
+              placeholder="Full name (as on campus ID)"
+              required
+              autoComplete="name"
+            />
+          ) : null}
           <input name="email" type="email" placeholder="Email" required autoComplete="email" />
           <input
             name="password"

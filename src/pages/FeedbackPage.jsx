@@ -26,10 +26,22 @@ const initialPolls = [
   },
 ]
 
+function StarRatingDisplay({ value }) {
+  return (
+    <div className="star-rating-readonly" aria-label={`${value} out of 5 stars`}>
+      {[1, 2, 3, 4, 5].map((n) => (
+        <span key={n} className={n <= value ? 'is-on' : ''} aria-hidden>
+          ★
+        </span>
+      ))}
+    </div>
+  )
+}
+
 const initialFeedback = [
   {
     id: 'f1',
-    author: 'Emma Wilson',
+    author: 'Fatima Khan',
     area: 'Events',
     message: 'Loved the AI career session. Please share speaker slides afterward.',
     rating: 5,
@@ -37,7 +49,7 @@ const initialFeedback = [
   },
   {
     id: 'f2',
-    author: 'Sarah Johnson',
+    author: 'Ayesha Malik',
     area: 'Study Groups',
     message: 'Group reminders are useful; add calendar sync for weekly sessions.',
     rating: 4,
@@ -50,6 +62,9 @@ function FeedbackPage() {
   const [feedbackEntries, setFeedbackEntries] = useState(initialFeedback)
   const [selectedPollId, setSelectedPollId] = useState(initialPolls[0].id)
   const [votedPollIds, setVotedPollIds] = useState([])
+  const [rating, setRating] = useState(0)
+  const [hoverRating, setHoverRating] = useState(0)
+  const [ratingTouched, setRatingTouched] = useState(false)
 
   const selectedPoll = polls.find((poll) => poll.id === selectedPollId) || null
 
@@ -66,9 +81,12 @@ function FeedbackPage() {
     const formData = new FormData(event.currentTarget)
     const area = String(formData.get('area') || '').trim()
     const message = String(formData.get('message') || '').trim()
-    const rating = Number(formData.get('rating') || 0)
 
-    if (!area || !message || !rating) return
+    if (!area || !message) return
+    if (!rating) {
+      setRatingTouched(true)
+      return
+    }
 
     const newEntry = {
       id: `f-${Date.now()}`,
@@ -81,6 +99,9 @@ function FeedbackPage() {
 
     setFeedbackEntries((prev) => [newEntry, ...prev])
     event.currentTarget.reset()
+    setRating(0)
+    setHoverRating(0)
+    setRatingTouched(false)
   }
 
   const votePollOption = (pollId, optionId) => {
@@ -168,7 +189,41 @@ function FeedbackPage() {
           <form className="event-form" onSubmit={submitFeedback}>
             <input name="area" placeholder="Area (e.g. Events, Quizzes)" required />
             <textarea name="message" rows="4" placeholder="Share your feedback..." required />
-            <input name="rating" type="number" min="1" max="5" placeholder="Rating (1-5)" required />
+            <div className="star-rating-field">
+              <span className="star-rating-label" id="feedback-rating-label">
+                Rating
+              </span>
+              <div
+                className="star-rating-input"
+                role="group"
+                aria-labelledby="feedback-rating-label"
+                onMouseLeave={() => setHoverRating(0)}
+              >
+                {[1, 2, 3, 4, 5].map((n) => {
+                  const active = (hoverRating || rating) >= n
+                  return (
+                    <button
+                      key={n}
+                      type="button"
+                      className={`star-rating-star ${active ? 'is-on' : ''}`}
+                      onClick={() => {
+                        setRating(n)
+                        setRatingTouched(true)
+                      }}
+                      onMouseEnter={() => setHoverRating(n)}
+                      aria-label={`${n} out of 5 stars`}
+                    >
+                      ★
+                    </button>
+                  )
+                })}
+              </div>
+              {ratingTouched && !rating ? (
+                <small className="error-text">Select a rating from 1 to 5 stars.</small>
+              ) : (
+                <small className="star-rating-hint">{rating ? `${rating} / 5` : 'Tap a star to rate'}</small>
+              )}
+            </div>
             <button type="submit">Submit Feedback</button>
           </form>
         </article>
@@ -186,8 +241,8 @@ function FeedbackPage() {
               </small>
             </div>
             <div className="row-meta">
-              <span>{'⭐'.repeat(entry.rating)}</span>
-              <small>{entry.rating}/5</small>
+              <StarRatingDisplay value={entry.rating} />
+              <small className="star-rating-caption">{entry.rating}/5</small>
             </div>
           </article>
         ))}

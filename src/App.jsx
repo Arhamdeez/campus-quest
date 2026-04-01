@@ -1,9 +1,10 @@
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom'
 import './App.css'
 import AppShell from './components/AppShell'
 import { initialStudyGroups } from './data/mockData'
 import { auth, db, firebaseInitError } from './lib/firebase'
+import { resolveUserDisplayName } from './lib/userDisplayName'
 import ChallengesPage from './pages/ChallengesPage'
 import DashboardPage from './pages/DashboardPage'
 import EventsPage from './pages/EventsPage'
@@ -16,7 +17,12 @@ import QuizzesPage from './pages/QuizzesPage'
 import RewardsPage from './pages/RewardsPage'
 import StudyGroupChatPage from './pages/StudyGroupChatPage'
 import StudyGroupsPage from './pages/StudyGroupsPage'
-import { createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut } from 'firebase/auth'
+import {
+  createUserWithEmailAndPassword,
+  signInWithEmailAndPassword,
+  signOut,
+  updateProfile,
+} from 'firebase/auth'
 import { get, onValue, ref, runTransaction, set } from 'firebase/database'
 
 function App() {
@@ -27,6 +33,8 @@ function App() {
   const [studyGroups, setStudyGroups] = useState(initialStudyGroups)
   const [quizResults, setQuizResults] = useState({})
   const [awardedActionKeys, setAwardedActionKeys] = useState([])
+  /** Set during sign-up so the first RTDB write can use the chosen display name (not the email prefix). */
+  const pendingSignupProfile = useRef(null)
 
   const firebaseConfigError =
     firebaseInitError?.message || (!auth || !db ? 'Firebase is not configured correctly (auth/db unavailable).' : '')
@@ -52,7 +60,9 @@ function App() {
         const existing = snap.exists() ? snap.val() : null
 
         if (!existing) {
-          const defaultName = user.email ? user.email.split('@')[0] : 'Student'
+          const fromPending = pendingSignupProfile.current
+          pendingSignupProfile.current = null
+          const defaultName = fromPending?.displayName?.trim() || resolveUserDisplayName(user, {})
           const record = {
             profile: {
               name: defaultName,
@@ -77,7 +87,7 @@ function App() {
         // Stats + quiz results are kept in sync via RTDB subscriptions below.
         setCurrentUser({
           uid: user.uid,
-          name: profile.name || (user.email ? user.email.split('@')[0] : 'Student'),
+          name: resolveUserDisplayName(user, profile),
           email: profile.email || user.email || '',
           role: profile.role || 'Student',
           points: 0,
@@ -96,7 +106,7 @@ function App() {
           )
           setCurrentUser({
             uid: user.uid,
-            name: user.email ? user.email.split('@')[0] : 'Student',
+            name: resolveUserDisplayName(user, {}),
             email: user.email || '',
             role: 'Student',
             points: 0,
@@ -201,15 +211,28 @@ function App() {
     }
   }
 
-  const signup = async ({ email, password }) => {
+  const signup = async ({ email, password, name }) => {
     if (!firebaseReady) {
       setLoginError(firebaseConfigError || 'Firebase is not configured correctly.')
       return
     }
 
+    const displayName = String(name || '').trim()
+    if (!displayName) {
+      setLoginError('Please enter your full name.')
+      return
+    }
+
     try {
       setLoginError('')
-      await createUserWithEmailAndPassword(auth, email, password)
+      pendingSignupProfile.current = { displayName }
+      try {
+        const cred = await createUserWithEmailAndPassword(auth, email, password)
+        await updateProfile(cred.user, { displayName })
+      } catch (inner) {
+        pendingSignupProfile.current = null
+        throw inner
+      }
     } catch (err) {
       if (err?.code === 'auth/email-already-in-use') {
         setLoginError('This email is already registered. Try logging in instead.')
@@ -220,6 +243,33 @@ function App() {
         return
       }
       setLoginError(err?.message || 'Failed to create account.')
+    }
+  }
+
+  const saveDisplayName = async (name) => {
+    if (!firebaseReady || !currentUser?.uid || !auth.currentUser) return
+    const trimmed = String(name || '').trim()
+    if (!trimmed) {
+      throw new Error('Name cannot be empty.')
+    }
+    const prevName = currentUser?.name
+    try {
+      await updateProfile(auth.currentUser, { displayName: trimmed })
+      await set(ref(db, `users/${currentUser.uid}/profile/name`), trimmed)
+      setCurrentUser((prev) => (prev ? { ...prev, name: trimmed } : prev))
+      if (prevName && prevName !== trimmed) {
+        setStudyGroups((groups) =>
+          groups.map((g) => ({
+            ...g,
+            members: g.members.map((m) => (m === prevName ? trimmed : m)),
+            messages: g.messages.map((msg) =>
+              msg.author === prevName ? { ...msg, author: trimmed } : msg,
+            ),
+          })),
+        )
+      }
+    } catch (err) {
+      throw new Error(err?.message || 'Could not update your name.')
     }
   }
 
@@ -300,6 +350,27 @@ function App() {
       }),
     )
   }
+
+  /** Demo-only: scripted messages from other members while a chat is open. */
+  const appendSimulatedMessage = useCallback((groupId, { author, text }) => {
+    setStudyGroups((prevGroups) =>
+      prevGroups.map((group) => {
+        if (group.id !== groupId) return group
+        return {
+          ...group,
+          messages: [
+            ...group.messages,
+            {
+              id: `live-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`,
+              author,
+              text,
+              time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+            },
+          ],
+        }
+      }),
+    )
+  }, [])
 
   const handleChallengeCompleted = (challenge) => {
     awardPoints({ amount: challenge.points, actionKey: `challenge-complete-${challenge.id}` })
@@ -383,6 +454,7 @@ function App() {
                 onJoinGroup={joinGroup}
                 onLeaveGroup={leaveGroup}
                 onSendMessage={sendGroupMessage}
+                onSimulatedMessage={appendSimulatedMessage}
               />
             }
           />
@@ -396,6 +468,7 @@ function App() {
               <ProfilePage
                 currentUser={currentUser}
                 onLogout={logout}
+                onSaveDisplayName={saveDisplayName}
                 notice={dbWarning}
               />
             }
