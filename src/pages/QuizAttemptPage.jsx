@@ -32,7 +32,8 @@ function QuizAttemptPage({ onQuizCompleted }) {
 
     const totalQuestions = quiz.questions.length
     const accuracy = totalQuestions ? correctCount / totalQuestions : 0
-    const earnedPoints = Math.round((quiz.points * correctCount) / totalQuestions)
+    const rawPoints = (quiz.points * correctCount) / totalQuestions
+    const earnedPoints = Math.max(0, Math.min(quiz.points, Math.round(rawPoints / 5) * 5))
 
     const weakTopics = Object.entries(topicStats)
       .filter(([, value]) => value.correct / value.total < 0.6)
@@ -58,6 +59,7 @@ function QuizAttemptPage({ onQuizCompleted }) {
     resultSavedRef.current = true
     onQuizCompleted?.({
       id: quiz.id,
+      title: quiz.title,
       earnedPoints: result.earnedPoints,
       correctCount: result.correctCount,
       totalQuestions: result.totalQuestions,

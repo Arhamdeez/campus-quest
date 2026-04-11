@@ -84,6 +84,46 @@
   font-size: 12px;
 }
 
+.points-global-strip {
+  margin-bottom: 16px;
+  padding: 10px 14px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  justify-content: space-between;
+}
+
+.points-global-strip__total {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 88px;
+}
+
+.points-global-strip__total small {
+  color: var(--cq-muted-2);
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.points-global-strip__total strong {
+  font-size: 22px;
+  line-height: 1;
+}
+
+.points-global-strip__parts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 14px;
+  color: var(--cq-muted);
+  font-size: 12px;
+}
+
+.points-global-strip__parts span {
+  white-space: nowrap;
+}
+
 .nav-list a {
   text-decoration: none;
   color: var(--cq-muted);
@@ -247,6 +287,35 @@ button:disabled {
 .ghost-btn {
   background: rgba(255, 255, 255, 0.06);
   border: 1px solid rgba(255, 255, 255, 0.24);
+}
+
+/* <Link> uses <a> — it does not inherit `button { ... }` rules, so match ghost buttons explicitly */
+a.ghost-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+  min-height: 44px;
+  padding: 12px 14px;
+  border-radius: 10px;
+  font: inherit;
+  font-weight: 600;
+  color: var(--cq-text);
+  text-decoration: none;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+a.ghost-btn:visited {
+  color: var(--cq-text);
+}
+
+a.ghost-btn:hover {
+  background: rgba(255, 255, 255, 0.11);
+}
+
+a.ghost-btn:active {
+  transform: translateY(1px);
 }
 
 .login-form {
@@ -930,6 +999,30 @@ th {
   color: var(--cq-muted);
 }
 
+.profile-rewards-cta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+  margin-bottom: 12px;
+}
+
+.profile-rewards-cta h4 {
+  margin: 0 0 4px;
+  color: var(--cq-text);
+}
+
+.profile-rewards-cta__copy .muted {
+  margin: 0;
+  font-size: 14px;
+}
+
+.profile-rewards-cta__link {
+  text-decoration: none;
+  flex-shrink: 0;
+}
+
 .avatar {
   width: 66px;
   height: 66px;
@@ -944,11 +1037,63 @@ th {
 
 @media (max-width: 760px) {
   .app-shell {
-    padding: 14px 12px 28px;
+    padding: 12px 10px 24px;
+  }
+
+  .topbar {
+    padding: 10px 12px;
+    margin-bottom: 14px;
+    gap: 10px;
+    top: 6px;
+  }
+
+  .brand {
+    font-size: 16px;
+  }
+
+  .nav-list {
+    order: 3;
+    width: 100%;
+    margin-left: 0;
+    overflow-x: auto;
+    flex-wrap: nowrap;
+    scrollbar-width: thin;
+    padding-bottom: 2px;
+  }
+
+  .nav-list a {
+    white-space: nowrap;
+    font-size: 12px;
+    padding: 7px 9px;
+  }
+
+  .auth-status {
+    order: 2;
+    margin-left: auto;
+    width: auto;
+    justify-content: flex-end;
+    text-align: right;
+    font-size: 11px;
+  }
+
+  .points-global-strip {
+    margin-bottom: 12px;
+    padding: 10px 12px;
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .points-global-strip__total strong {
+    font-size: 20px;
+  }
+
+  .points-global-strip__parts {
+    width: 100%;
+    gap: 6px 10px;
   }
 
   .page-header h1 {
-    font-size: 28px;
+    font-size: 26px;
   }
 
   .stat-grid {
@@ -956,10 +1101,22 @@ th {
     gap: 10px;
   }
 
+  .stat-card {
+    padding: 14px;
+  }
+
+  .stat-card strong {
+    font-size: 30px;
+  }
+
   .grid-two,
   .grid-three {
     grid-template-columns: 1fr;
     gap: 12px;
+  }
+
+  .panel {
+    padding: 14px;
   }
 
   .button-grid {
@@ -970,18 +1127,506 @@ th {
     grid-template-columns: 1fr;
   }
 
-  .auth-status {
-    width: 100%;
-    justify-content: space-between;
+  .chat-header {
+    flex-direction: column;
+    gap: 8px;
   }
 
   .list-row {
     flex-direction: column;
+    gap: 10px;
+    padding: 12px 0;
   }
 
   .row-meta {
     text-align: left;
     align-items: flex-start;
     min-width: 0;
+    width: 100%;
   }
+
+  .row-meta > span {
+    margin-bottom: 2px;
+  }
+
+  .quiz-card-footer {
+    justify-content: flex-start;
+    gap: 10px;
+  }
+
+  .class-form {
+    grid-template-columns: 1fr;
+  }
+
+  .class-form .span-2 {
+    grid-column: span 1;
+  }
+
+  table {
+    display: block;
+    overflow-x: auto;
+    white-space: nowrap;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .empty {
+    padding: 24px 16px;
+  }
+}
+
+@media (max-width: 560px) {
+  .topbar {
+    position: static;
+  }
+
+  .nav-list {
+    gap: 5px;
+  }
+
+  .stat-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .stat-card strong {
+    font-size: 28px;
+  }
+
+  .profile-card {
+    padding: 16px;
+  }
+
+  .profile-name-row {
+    display: grid;
+    grid-template-columns: 1fr;
+  }
+
+  .profile-name-row input {
+    min-width: 0;
+  }
+
+  .profile-logout,
+  .profile-name-row .ghost-btn,
+  .profile-rewards-cta__link {
+    width: 100%;
+    margin-left: 0;
+  }
+
+  .event-actions {
+    width: 100%;
+  }
+
+  .event-actions button,
+  .event-actions .ticket-link {
+    width: 100%;
+  }
+
+  .quiz-question {
+    padding: 12px;
+  }
+
+  .class-login-modal {
+    padding: 18px 14px 14px;
+  }
+}
+
+@media (max-width: 400px) {
+  .app-shell {
+    padding: 10px 8px 20px;
+  }
+
+  .topbar {
+    padding: 9px 10px;
+  }
+
+  .panel {
+    padding: 12px;
+  }
+
+  button,
+  a.ghost-btn,
+  .ticket-link {
+    min-height: 42px;
+    padding: 10px 12px;
+    font-size: 14px;
+  }
+}
+
+/* Classes & attendance */
+.muted {
+  color: var(--cq-muted);
+}
+
+.muted.small,
+.small {
+  font-size: 13px;
+}
+
+.panel .muted.small {
+  margin-bottom: 12px;
+}
+
+.panel-error {
+  margin: 0 0 14px;
+  padding: 12px 14px;
+  border-radius: 12px;
+  border: 1px solid rgba(252, 165, 165, 0.35);
+  background: rgba(127, 29, 29, 0.2);
+  color: #fecaca;
+  font-size: 14px;
+}
+
+.attendance-toast {
+  margin-bottom: 16px;
+  padding: 12px 16px;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.attendance-toast--ok {
+  border-color: rgba(52, 211, 153, 0.35);
+  background: rgba(6, 78, 59, 0.25);
+  color: #a7f3d0;
+}
+
+.attendance-toast--warn {
+  border-color: rgba(251, 191, 36, 0.35);
+  background: rgba(120, 53, 15, 0.22);
+  color: #fde68a;
+}
+
+.file-upload-label {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 12px 14px;
+  min-height: 44px;
+  border-radius: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  background: rgba(255, 255, 255, 0.07);
+  font-weight: 600;
+  cursor: pointer;
+  color: var(--cq-text);
+}
+
+.file-upload-label:hover {
+  background: rgba(255, 255, 255, 0.11);
+}
+
+.file-upload-label input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.timetable-preview-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  align-items: flex-start;
+}
+
+.timetable-preview {
+  max-width: 100%;
+  max-height: 280px;
+  object-fit: contain;
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+}
+
+button.secondary {
+  background: rgba(255, 255, 255, 0.04);
+  border-color: rgba(255, 255, 255, 0.14);
+  font-weight: 600;
+}
+
+button.narrow {
+  min-height: 38px;
+  padding: 8px 12px;
+  font-size: 13px;
+}
+
+.button-grid.tight {
+  gap: 8px;
+}
+
+.button-grid.inline {
+  grid-template-columns: 1fr 1fr;
+  min-width: min(100%, 320px);
+}
+
+.class-form {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px 14px;
+  margin-top: 8px;
+}
+
+.class-form label {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 13px;
+  color: var(--cq-muted);
+}
+
+.class-form input,
+.class-form select {
+  padding: 10px 12px;
+  border-radius: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  background: rgba(0, 0, 0, 0.2);
+  color: var(--cq-text);
+  font-size: 14px;
+}
+
+.class-form .span-2 {
+  grid-column: span 2;
+}
+
+.classes-add-disclosure {
+  padding: 0;
+}
+
+.classes-add-disclosure__summary {
+  list-style: none;
+  cursor: pointer;
+  padding: 14px 16px;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 12px;
+  user-select: none;
+}
+
+.classes-add-disclosure__summary::-webkit-details-marker {
+  display: none;
+}
+
+.classes-add-disclosure__chev {
+  width: 0;
+  height: 0;
+  border-left: 5px solid transparent;
+  border-right: 5px solid transparent;
+  border-top: 6px solid var(--cq-muted-2);
+  flex-shrink: 0;
+  transition: transform 0.18s ease;
+}
+
+.classes-add-disclosure[open] .classes-add-disclosure__chev {
+  transform: rotate(180deg);
+}
+
+.classes-add-disclosure__title {
+  font-size: 17px;
+  font-weight: 700;
+  color: var(--cq-text);
+  flex: 1;
+  min-width: 0;
+}
+
+.classes-add-disclosure__hint {
+  font-size: 12px;
+  color: var(--cq-muted-2);
+  flex: 1 1 100%;
+}
+
+@media (min-width: 520px) {
+  .classes-add-disclosure__hint {
+    flex: 0 0 auto;
+    margin-left: auto;
+  }
+}
+
+.classes-add-disclosure__body {
+  padding: 4px 16px 16px;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.class-check-list {
+  list-style: none;
+  padding-left: 0;
+  margin: 0;
+}
+
+.class-check-list .list-row {
+  align-items: center;
+}
+
+.class-check-row h4 {
+  margin: 0 0 4px;
+  font-size: 16px;
+}
+
+.class-check-row p {
+  margin: 0;
+  font-size: 13px;
+  color: var(--cq-muted);
+}
+
+.class-check-actions {
+  flex-shrink: 0;
+}
+
+.tag {
+  display: inline-block;
+  padding: 6px 12px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.tag--ok {
+  background: rgba(16, 185, 129, 0.15);
+  border: 1px solid rgba(52, 211, 153, 0.35);
+  color: #6ee7b7;
+}
+
+.tag--miss {
+  background: rgba(248, 113, 113, 0.12);
+  border: 1px solid rgba(252, 165, 165, 0.3);
+  color: #fecaca;
+}
+
+.tag-inline {
+  margin-left: 8px;
+  vertical-align: middle;
+  padding: 4px 10px;
+  font-size: 11px;
+  font-weight: 600;
+  background: rgba(99, 102, 241, 0.2);
+  border: 1px solid rgba(165, 180, 252, 0.35);
+  color: #c7d2fe;
+}
+
+.challenge-scheduled h4 {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.challenge-window {
+  margin-top: 6px;
+  font-size: 13px;
+  line-height: 1.45;
+}
+
+.panel code {
+  font-size: 12px;
+  padding: 2px 6px;
+  border-radius: 6px;
+  background: rgba(0, 0, 0, 0.25);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+/* Post-login class check-in */
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 200;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  background: rgba(4, 10, 24, 0.72);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+}
+
+.class-login-modal {
+  width: 100%;
+  max-width: 440px;
+  padding: 22px 22px 18px;
+}
+
+.class-login-modal h3 {
+  margin: 0 0 12px;
+  font-size: 20px;
+}
+
+.class-login-modal__lead {
+  margin: 0 0 18px;
+  font-size: 15px;
+  line-height: 1.5;
+  color: var(--cq-muted);
+}
+
+.class-login-modal__lead strong {
+  color: var(--cq-text);
+}
+
+.class-login-modal__actions {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.class-login-modal__actions button {
+  width: 100%;
+}
+
+.class-login-modal__later {
+  margin-top: 14px;
+  width: 100%;
+  min-height: 40px;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+/* Classes page: compact top strip + thin attendance banner */
+.classes-page-top {
+  margin-bottom: 14px;
+  padding: 8px 12px 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+.classes-meta-strip {
+  margin: 0;
+  font-size: 12px;
+  line-height: 1.35;
+  color: var(--cq-muted-2);
+  font-weight: 500;
+}
+
+.classes-attendance-rail {
+  margin-top: 8px;
+  padding: 8px 11px 8px 12px;
+  border-radius: 10px;
+  background: rgba(99, 102, 241, 0.1);
+  border: 1px solid rgba(129, 140, 248, 0.28);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06);
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 6px 10px;
+  font-size: 13px;
+  line-height: 1.45;
+  color: var(--cq-muted);
+}
+
+.classes-attendance-rail__label {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  color: #a5b4fc;
+  flex-shrink: 0;
+}
+
+.classes-attendance-rail__stats {
+  flex: 1;
+  min-width: min(100%, 200px);
+}
+
+.classes-attendance-rail__stats strong {
+  color: var(--cq-text);
+  font-weight: 600;
+}
+
+.classes-attendance-rail__dot {
+  color: var(--cq-muted-2);
 }

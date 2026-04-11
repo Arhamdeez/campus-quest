@@ -1,9 +1,11 @@
 import Header from '../components/Header'
 import StatRow from '../components/StatRow'
+import { useUserSchedule } from '../hooks/useUserSchedule'
 import { useNavigate } from 'react-router-dom'
 
 function DashboardPage({ currentUser }) {
   const navigate = useNavigate()
+  const { stats: classStats } = useUserSchedule(currentUser?.uid)
 
   return (
     <>
@@ -11,8 +13,8 @@ function DashboardPage({ currentUser }) {
       <StatRow
         stats={[
           { icon: '🏅', value: String(currentUser?.points ?? 0), label: 'Points' },
-          { icon: '🔥', value: '0', label: 'Current Streak' },
-          { icon: '✅', value: '0', label: 'Tasks Completed', tone: 'ok' },
+          { icon: '📚', value: String(classStats.attended), label: 'Classes attended', tone: 'ok' },
+          { icon: '⏭️', value: String(classStats.missed), label: 'Classes missed' },
           { icon: '🎁', value: '8', label: 'Rewards Available', tone: 'warn' },
         ]}
       />
@@ -28,6 +30,9 @@ function DashboardPage({ currentUser }) {
             </button>
             <button type="button" onClick={() => navigate('/quizzes')}>
               Take Quiz
+            </button>
+            <button type="button" onClick={() => navigate('/classes')}>
+              Classes & attendance
             </button>
             <button type="button" onClick={() => navigate('/rewards')}>
               Explore Rewards

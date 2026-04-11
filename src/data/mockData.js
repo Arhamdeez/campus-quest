@@ -1,11 +1,11 @@
 export const navLinks = [
   { to: '/dashboard', label: 'Dashboard' },
+  { to: '/classes', label: 'Classes' },
   { to: '/leaderboard', label: 'Leaderboard' },
   { to: '/events', label: 'Events' },
   { to: '/challenges', label: 'Challenges' },
   { to: '/study-groups', label: 'Study Groups' },
   { to: '/quizzes', label: 'Quizzes' },
-  { to: '/rewards', label: 'Rewards' },
   { to: '/feedback', label: 'Feedback' },
   { to: '/profile', label: 'Profile' },
 ]
@@ -23,7 +23,7 @@ export const eventFeed = [
     title: 'AI Career Fair',
     datetime: 'Mar 28, 11:00 AM',
     location: 'Main Hall',
-    points: 120,
+    points: 15,
     organizer: 'Career Services',
     price: 'Free',
     capacity: 300,
@@ -35,7 +35,7 @@ export const eventFeed = [
     title: 'Hack Night',
     datetime: 'Apr 01, 5:30 PM',
     location: 'Innovation Lab',
-    points: 150,
+    points: 15,
     organizer: 'Developer Club',
     price: '$5',
     capacity: 120,
@@ -47,7 +47,7 @@ export const eventFeed = [
     title: 'Volunteer Drive',
     datetime: 'Apr 03, 9:00 AM',
     location: 'Campus Lawn',
-    points: 80,
+    points: 10,
     organizer: 'Community Cell',
     price: 'Free',
     capacity: 200,
@@ -123,7 +123,7 @@ export const quizCatalog = [
     id: 'q1',
     title: 'Data Structures Basics',
     description: 'Test your knowledge of fundamentals',
-    points: 30,
+    points: 15,
     duration: '10 min',
     questions: [
       {
@@ -166,7 +166,7 @@ export const quizCatalog = [
     id: 'q2',
     title: 'Calculus Quick Quiz',
     description: 'Test your understanding of calculus concepts',
-    points: 20,
+    points: 10,
     duration: '5 min',
     questions: [
       {
@@ -191,7 +191,7 @@ export const quizCatalog = [
     id: 'q3',
     title: 'React Fundamentals',
     description: 'Test your React knowledge',
-    points: 35,
+    points: 15,
     duration: '15 min',
     questions: [
       {

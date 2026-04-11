@@ -2,9 +2,11 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom'
 import './App.css'
 import AppShell from './components/AppShell'
+import PostLoginClassPrompt from './components/PostLoginClassPrompt'
 import { initialStudyGroups } from './data/mockData'
 import { auth, db, firebaseInitError } from './lib/firebase'
 import { resolveUserDisplayName } from './lib/userDisplayName'
+import ClassesPage from './pages/ClassesPage'
 import ChallengesPage from './pages/ChallengesPage'
 import DashboardPage from './pages/DashboardPage'
 import EventsPage from './pages/EventsPage'
@@ -33,6 +35,10 @@ function App() {
   const [studyGroups, setStudyGroups] = useState(initialStudyGroups)
   const [quizResults, setQuizResults] = useState({})
   const [awardedActionKeys, setAwardedActionKeys] = useState([])
+  const [pointsSummary, setPointsSummary] = useState({
+    total: 0,
+    byCategory: { classes: 0, events: 0, challenges: 0, quizzes: 0, studyGroups: 0, other: 0 },
+  })
   /** Set during sign-up so the first RTDB write can use the chosen display name (not the email prefix). */
   const pendingSignupProfile = useRef(null)
 
@@ -48,6 +54,10 @@ function App() {
         setCurrentUser(null)
         setQuizResults({})
         setAwardedActionKeys([])
+        setPointsSummary({
+          total: 0,
+          byCategory: { classes: 0, events: 0, challenges: 0, quizzes: 0, studyGroups: 0, other: 0 },
+        })
         setLoginError('')
         setDbWarning('')
         setAuthChecked(true)
@@ -140,10 +150,36 @@ function App() {
         const stats = snap.exists() ? snap.val() : {}
         const points = Number(stats?.points || 0)
         const awarded = stats?.awardedActionKeys && typeof stats.awardedActionKeys === 'object' ? stats.awardedActionKeys : {}
+        const awardedActions = stats?.awardedActions && typeof stats.awardedActions === 'object' ? stats.awardedActions : {}
         const awardedKeys = Object.keys(awarded).filter((k) => awarded[k])
+        const byCategory = {
+          classes: 0,
+          events: 0,
+          challenges: 0,
+          quizzes: 0,
+          studyGroups: 0,
+          other: 0,
+        }
+
+        for (const action of Object.values(awardedActions)) {
+          const amount = Number(action?.amount || 0)
+          if (amount <= 0) continue
+          const category = String(action?.category || 'other')
+          if (Object.prototype.hasOwnProperty.call(byCategory, category)) {
+            byCategory[category] += amount
+          } else {
+            byCategory.other += amount
+          }
+        }
+
+        const trackedTotal = Object.values(byCategory).reduce((sum, value) => sum + value, 0)
+        if (points > trackedTotal) {
+          byCategory.other += points - trackedTotal
+        }
 
         setCurrentUser((prev) => (prev ? { ...prev, points } : prev))
         setAwardedActionKeys(awardedKeys)
+        setPointsSummary({ total: points, byCategory })
         setDbWarning('')
       },
       (err) => {
@@ -168,25 +204,82 @@ function App() {
     }
   }, [currentUser?.uid, firebaseReady])
 
-  const awardPoints = ({ amount, actionKey }) => {
+  /** Public leaderboard row — readable by all signed-in users while `users/$uid` stays private. */
+  useEffect(() => {
+    if (!firebaseReady || !db || !currentUser?.uid) return undefined
+    const uid = currentUser.uid
+    const statsR = ref(db, `users/${uid}/stats`)
+    const profileR = ref(db, `users/${uid}/profile`)
+    const attR = ref(db, `users/${uid}/schedule/attendance`)
+
+    let stats = {}
+    let profile = {}
+    let attendance = {}
+
+    const pushLeaderboardPublic = () => {
+      const points = Number(stats?.points || 0)
+      const streak = Number(stats?.streak || 0)
+      const classesAttended = Object.values(attendance).filter((entry) => entry?.attended === true).length
+      const rawName = profile?.name || profile?.email || 'Student'
+      set(ref(db, `leaderboard/${uid}`), {
+        name: String(rawName).trim() || 'Student',
+        points,
+        streak,
+        classesAttended,
+        updatedAt: Date.now(),
+      }).catch((err) => console.error(err))
+    }
+
+    const unsubStats = onValue(statsR, (snap) => {
+      stats = snap.exists() ? snap.val() || {} : {}
+      pushLeaderboardPublic()
+    })
+    const unsubProfile = onValue(profileR, (snap) => {
+      profile = snap.exists() ? snap.val() || {} : {}
+      pushLeaderboardPublic()
+    })
+    const unsubAtt = onValue(attR, (snap) => {
+      attendance = snap.exists() ? snap.val() || {} : {}
+      pushLeaderboardPublic()
+    })
+
+    return () => {
+      unsubStats()
+      unsubProfile()
+      unsubAtt()
+    }
+  }, [firebaseReady, currentUser?.uid])
+
+  const awardPoints = async ({ amount, actionKey, category = 'other', label = '' }) => {
     if (!firebaseReady) return false
     if (!currentUser?.uid || !amount || !actionKey) return false
     if (awardedActionKeys.includes(actionKey)) return false
 
     const statsRef = ref(db, `users/${currentUser.uid}/stats`)
-    runTransaction(statsRef, (stats) => {
+    let granted = false
+    const txResult = await runTransaction(statsRef, (stats) => {
       const next = stats && typeof stats === 'object' ? stats : {}
       const currentPoints = Number(next.points || 0)
       const awarded = next.awardedActionKeys && typeof next.awardedActionKeys === 'object' ? next.awardedActionKeys : {}
-      if (awarded[actionKey]) return next
+      const awardedActions = next.awardedActions && typeof next.awardedActions === 'object' ? next.awardedActions : {}
+      if (awarded[actionKey]) return
+      granted = true
       return {
         ...next,
         points: currentPoints + amount,
         awardedActionKeys: { ...awarded, [actionKey]: true },
+        awardedActions: {
+          ...awardedActions,
+          [actionKey]: {
+            amount,
+            category,
+            label: label || actionKey,
+            awardedAt: Date.now(),
+          },
+        },
       }
     })
-    // UI will update via RTDB subscription.
-    return true
+    return Boolean(txResult?.committed && granted)
   }
 
   const login = async ({ email, password }) => {
@@ -304,7 +397,12 @@ function App() {
         }
       }),
     )
-    awardPoints({ amount: 8, actionKey: `group-join-${groupId}` })
+    void awardPoints({
+      amount: 10,
+      actionKey: `group-join-${groupId}`,
+      category: 'studyGroups',
+      label: 'Study group joined',
+    })
   }
 
   const leaveGroup = (groupId) => {
@@ -372,21 +470,59 @@ function App() {
     )
   }, [])
 
-  const handleChallengeCompleted = (challenge) => {
-    awardPoints({ amount: challenge.points, actionKey: `challenge-complete-${challenge.id}` })
+  const handleChallengeCompleted = async (challenge) => {
+    return awardPoints({
+      amount: challenge.points,
+      actionKey: `challenge-complete-${challenge.id}`,
+      category: 'challenges',
+      label: challenge.title || 'Challenge completed',
+    })
   }
 
-  const handleEventJoined = (event) => {
-    // Joining gives a smaller reward than event completion to keep balance.
-    const joinReward = Math.max(10, Math.round(event.points * 0.35))
-    awardPoints({ amount: joinReward, actionKey: `event-join-${event.id}` })
+  const handleEventJoined = async (event) => {
+    // Event cards display this value; award exactly what is shown.
+    return awardPoints({
+      amount: event.points,
+      actionKey: `event-join-${event.id}`,
+      category: 'events',
+      label: event.title || 'Event joined',
+    })
   }
 
-  const handleQuizCompleted = (result) => {
-    setQuizResults((prev) => ({ ...prev, [result.id]: result }))
-    awardPoints({ amount: result.earnedPoints, actionKey: `quiz-complete-${result.id}` })
+  const handleQuizCompleted = async (result) => {
+    const previous = quizResults?.[result.id]
+    const previousBest = Number(previous?.earnedPoints || 0)
+    const latestAttemptScore = Number(result.earnedPoints || 0)
+    const nextBest = Math.max(previousBest, latestAttemptScore)
+    const bonus = Math.max(0, nextBest - previousBest)
+
+    const storedResult =
+      nextBest > previousBest
+        ? {
+            ...result,
+            earnedPoints: nextBest,
+            bestEarnedPoints: nextBest,
+            lastAttemptEarnedPoints: latestAttemptScore,
+          }
+        : {
+            ...(previous || result),
+            bestEarnedPoints: previousBest,
+            lastAttemptEarnedPoints: latestAttemptScore,
+          }
+
+    setQuizResults((prev) => ({ ...prev, [result.id]: storedResult }))
+
+    if (bonus > 0) {
+      await awardPoints({
+        amount: bonus,
+        actionKey: `quiz-best-${result.id}-${nextBest}`,
+        category: 'quizzes',
+        label: `${result.title || 'Quiz'} best score`,
+      })
+    }
+
     if (firebaseReady && currentUser?.uid) {
-      set(ref(db, `users/${currentUser.uid}/quizResults/${result.id}`), result)
+      set(ref(db, `users/${currentUser.uid}/quizResults/${result.id}`), storedResult)
     }
   }
 
@@ -427,13 +563,21 @@ function App() {
 
   return (
     <BrowserRouter>
-      <AppShell currentUser={currentUser}>
+      <AppShell currentUser={currentUser} pointsSummary={pointsSummary}>
+        <PostLoginClassPrompt currentUser={currentUser} awardPoints={awardPoints} />
         <Routes>
           <Route path="/" element={<Navigate to="/dashboard" replace />} />
           <Route path="/dashboard" element={<DashboardPage currentUser={currentUser} />} />
-          <Route path="/leaderboard" element={<LeaderboardPage />} />
-          <Route path="/events" element={<EventsPage onEventJoined={handleEventJoined} />} />
-          <Route path="/challenges" element={<ChallengesPage onChallengeCompleted={handleChallengeCompleted} />} />
+          <Route path="/classes" element={<ClassesPage currentUser={currentUser} awardPoints={awardPoints} />} />
+          <Route path="/leaderboard" element={<LeaderboardPage currentUser={currentUser} />} />
+          <Route
+            path="/events"
+            element={<EventsPage onEventJoined={handleEventJoined} awardedActionKeys={awardedActionKeys} />}
+          />
+          <Route
+            path="/challenges"
+            element={<ChallengesPage onChallengeCompleted={handleChallengeCompleted} awardedActionKeys={awardedActionKeys} />}
+          />
           <Route
             path="/study-groups"
             element={

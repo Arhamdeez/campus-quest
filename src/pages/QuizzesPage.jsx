@@ -29,7 +29,7 @@ function QuizzesPage({ quizResults }) {
             <p>{q.description}</p>
             <div className="quiz-card-meta">
               <small>
-                {q.points} pts • {q.duration} • {q.questions.length} questions
+                {q.points} max pts • {q.duration} • {q.questions.length} questions
               </small>
             </div>
             <div className="quiz-card-footer">

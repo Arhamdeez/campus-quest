@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { Link } from 'react-router-dom'
 import Header from '../components/Header'
 import StatRow from '../components/StatRow'
 
@@ -90,6 +91,15 @@ function ProfilePage({ currentUser, onLogout, onSaveDisplayName, notice }) {
           { icon: '🎯', value: '0', label: 'Challenges Done' },
         ]}
       />
+      <section className="card panel profile-rewards-cta">
+        <div className="profile-rewards-cta__copy">
+          <h4>Rewards store</h4>
+          <p className="muted">Spend your points on perks, vouchers, and campus prizes.</p>
+        </div>
+        <Link to="/rewards" className="ghost-btn profile-rewards-cta__link">
+          Open rewards
+        </Link>
+      </section>
       <section className="card empty">
         <h4>Earned Badges (0/6)</h4>
         <p>No badges earned yet. Keep participating to unlock your first badge.</p>
