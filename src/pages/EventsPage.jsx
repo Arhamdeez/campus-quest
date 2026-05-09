@@ -5,7 +5,7 @@ import StatRow from '../components/StatRow'
 import { eventFeed } from '../data/mockData'
 import { db } from '../lib/firebase'
 
-function EventsPage({ onEventJoined, awardedActionKeys = [] }) {
+function EventsPage({ onEventJoined, awardedActionKeys = [], isAdmin = false }) {
   const [events, setEvents] = useState([])
   const [selectedEventId, setSelectedEventId] = useState(null)
   const [joinedEvents, setJoinedEvents] = useState([])
@@ -60,6 +60,7 @@ function EventsPage({ onEventJoined, awardedActionKeys = [] }) {
   const joinedSet = useMemo(() => new Set([...awardedJoinedIds, ...joinedEvents]), [awardedJoinedIds, joinedEvents])
 
   const handleAddEvent = async (event) => {
+    if (!isAdmin) return
     event.preventDefault()
     const formEl = event.currentTarget
     const formData = new FormData(formEl)
@@ -198,9 +199,13 @@ function EventsPage({ onEventJoined, awardedActionKeys = [] }) {
       ) : null}
 
       <section className="card panel events-toolbar">
-        <button type="button" onClick={() => setShowAddForm((prev) => !prev)}>
-          {showAddForm ? 'Close Add Event' : 'Add Event'}
-        </button>
+        {isAdmin ? (
+          <button type="button" onClick={() => setShowAddForm((prev) => !prev)}>
+            {showAddForm ? 'Close Add Event' : 'Add Event'}
+          </button>
+        ) : (
+          <small className="muted">Only admins can create new events.</small>
+        )}
       </section>
 
       {showAddForm ? (

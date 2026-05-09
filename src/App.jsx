@@ -27,6 +27,8 @@ import {
 } from 'firebase/auth'
 import { get, onValue, ref, runTransaction, set } from 'firebase/database'
 
+const ADMIN_EMAILS = ['l226619@lhr.nu.edu.pk']
+
 function App() {
   const [currentUser, setCurrentUser] = useState(null)
   const [authChecked, setAuthChecked] = useState(false)
@@ -561,6 +563,8 @@ function App() {
     )
   }
 
+  const isAdmin = ADMIN_EMAILS.includes(String(currentUser.email || '').trim().toLowerCase())
+
   return (
     <BrowserRouter>
       <AppShell currentUser={currentUser} pointsSummary={pointsSummary}>
@@ -572,7 +576,7 @@ function App() {
           <Route path="/leaderboard" element={<LeaderboardPage currentUser={currentUser} />} />
           <Route
             path="/events"
-            element={<EventsPage onEventJoined={handleEventJoined} awardedActionKeys={awardedActionKeys} />}
+            element={<EventsPage onEventJoined={handleEventJoined} awardedActionKeys={awardedActionKeys} isAdmin={isAdmin} />}
           />
           <Route
             path="/challenges"
@@ -605,7 +609,7 @@ function App() {
           <Route path="/quizzes" element={<QuizzesPage quizResults={quizResults} />} />
           <Route path="/quizzes/:quizId" element={<QuizAttemptPage onQuizCompleted={handleQuizCompleted} />} />
           <Route path="/rewards" element={<RewardsPage currentUser={currentUser} />} />
-          <Route path="/feedback" element={<FeedbackPage />} />
+          <Route path="/feedback" element={<FeedbackPage currentUser={currentUser} isAdmin={isAdmin} />} />
           <Route
             path="/profile"
             element={

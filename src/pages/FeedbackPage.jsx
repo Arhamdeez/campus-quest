@@ -1,6 +1,8 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
+import { onValue, ref, runTransaction, set } from 'firebase/database'
 import Header from '../components/Header'
 import StatRow from '../components/StatRow'
+import { db } from '../lib/firebase'
 
 const initialPolls = [
   {
@@ -26,98 +28,247 @@ const initialPolls = [
   },
 ]
 
-function StarRatingDisplay({ value }) {
-  return (
-    <div className="star-rating-readonly" aria-label={`${value} out of 5 stars`}>
-      {[1, 2, 3, 4, 5].map((n) => (
-        <span key={n} className={n <= value ? 'is-on' : ''} aria-hidden>
-          ★
-        </span>
-      ))}
-    </div>
-  )
-}
-
-const initialFeedback = [
+const initialFeedbackThreads = [
   {
     id: 'f1',
+    title: 'Share session slides',
     author: 'Fatima Khan',
     area: 'Events',
     message: 'Loved the AI career session. Please share speaker slides afterward.',
-    rating: 5,
-    date: 'Mar 22',
+    createdAt: Date.now() - 2 * 24 * 60 * 60 * 1000,
+    status: 'open',
+    createdByAdmin: true,
   },
   {
     id: 'f2',
+    title: 'Calendar sync request',
     author: 'Ayesha Malik',
     area: 'Study Groups',
     message: 'Group reminders are useful; add calendar sync for weekly sessions.',
-    rating: 4,
-    date: 'Mar 23',
+    createdAt: Date.now() - 24 * 60 * 60 * 1000,
+    status: 'open',
+    createdByAdmin: true,
   },
 ]
 
-function FeedbackPage() {
+const initialRepliesByThread = {
+  f1: [
+    {
+      id: 'r1',
+      author: 'Campus Team',
+      message: 'Thanks. We will upload slides after the event.',
+      createdAt: Date.now() - 23 * 60 * 60 * 1000,
+    },
+  ],
+}
+
+function FeedbackPage({ currentUser, isAdmin = false }) {
   const [polls, setPolls] = useState(initialPolls)
-  const [feedbackEntries, setFeedbackEntries] = useState(initialFeedback)
+  const [feedbackThreads, setFeedbackThreads] = useState(initialFeedbackThreads)
+  const [repliesByThread, setRepliesByThread] = useState(initialRepliesByThread)
   const [selectedPollId, setSelectedPollId] = useState(initialPolls[0].id)
   const [votedPollIds, setVotedPollIds] = useState([])
-  const [rating, setRating] = useState(0)
-  const [hoverRating, setHoverRating] = useState(0)
-  const [ratingTouched, setRatingTouched] = useState(false)
+  const [draftReplies, setDraftReplies] = useState({})
+  const [boardError, setBoardError] = useState('')
+  const [showCreateForm, setShowCreateForm] = useState(false)
+
+  useEffect(() => {
+    if (!db) return undefined
+
+    const pollsRef = ref(db, 'feedback/polls')
+    const threadsRef = ref(db, 'feedback/threads')
+    const repliesRef = ref(db, 'feedback/replies')
+    const votesRef = ref(db, `feedback/votes/${currentUser?.uid || 'anon'}`)
+
+    const unsubPolls = onValue(
+      pollsRef,
+      (snap) => {
+        const val = snap.exists() ? snap.val() : null
+        if (!val) {
+          setPolls(initialPolls)
+          setSelectedPollId((prev) => prev || initialPolls[0]?.id || null)
+          return
+        }
+        const list = Object.values(val)
+          .map((poll) => ({
+            ...poll,
+            options: Array.isArray(poll.options) ? poll.options : Object.values(poll.options || {}),
+          }))
+          .sort((a, b) => (Number(b.createdAt) || 0) - (Number(a.createdAt) || 0))
+        setPolls(list)
+        setSelectedPollId((prev) => {
+          if (prev && list.some((p) => p.id === prev)) return prev
+          return list[0]?.id || null
+        })
+      },
+      () => setBoardError('Some feedback data could not be loaded from database rules.'),
+    )
+
+    const unsubThreads = onValue(
+      threadsRef,
+      (snap) => {
+        const val = snap.exists() ? snap.val() : null
+        if (!val) {
+          setFeedbackThreads(initialFeedbackThreads)
+          return
+        }
+        const list = Object.values(val).sort((a, b) => (Number(b.createdAt) || 0) - (Number(a.createdAt) || 0))
+        setFeedbackThreads(list)
+      },
+      () => setBoardError('Some feedback data could not be loaded from database rules.'),
+    )
+
+    const unsubReplies = onValue(
+      repliesRef,
+      (snap) => {
+        const val = snap.exists() ? snap.val() : null
+        if (!val) {
+          setRepliesByThread(initialRepliesByThread)
+          return
+        }
+        const parsed = {}
+        for (const [threadId, threadReplies] of Object.entries(val)) {
+          parsed[threadId] = Object.values(threadReplies || {}).sort(
+            (a, b) => (Number(a.createdAt) || 0) - (Number(b.createdAt) || 0),
+          )
+        }
+        setRepliesByThread(parsed)
+      },
+      () => setBoardError('Some feedback data could not be loaded from database rules.'),
+    )
+
+    const unsubVotes = onValue(
+      votesRef,
+      (snap) => {
+        const val = snap.exists() ? snap.val() : {}
+        setVotedPollIds(Object.keys(val || {}))
+      },
+      () => {},
+    )
+
+    return () => {
+      unsubPolls()
+      unsubThreads()
+      unsubReplies()
+      unsubVotes()
+    }
+  }, [currentUser?.uid])
 
   const selectedPoll = polls.find((poll) => poll.id === selectedPollId) || null
 
-  const averageRating = useMemo(() => {
-    if (!feedbackEntries.length) return 0
-    return (
-      feedbackEntries.reduce((sum, item) => sum + item.rating, 0) /
-      feedbackEntries.length
-    ).toFixed(1)
-  }, [feedbackEntries])
+  const totalReplies = useMemo(
+    () => Object.values(repliesByThread).reduce((sum, replies) => sum + replies.length, 0),
+    [repliesByThread],
+  )
 
-  const submitFeedback = (event) => {
+  const createFeedbackThread = async (event) => {
     event.preventDefault()
+    if (!isAdmin) return
     const formData = new FormData(event.currentTarget)
+    const title = String(formData.get('title') || '').trim()
     const area = String(formData.get('area') || '').trim()
     const message = String(formData.get('message') || '').trim()
 
-    if (!area || !message) return
-    if (!rating) {
-      setRatingTouched(true)
+    if (!title || !area || !message) return
+
+    const id = `fb-${Date.now()}`
+    const newEntry = {
+      id,
+      title,
+      author: currentUser?.name || 'Admin',
+      area,
+      message,
+      createdAt: Date.now(),
+      status: 'open',
+      createdByAdmin: true,
+    }
+
+    if (!db) {
+      setFeedbackThreads((prev) => [newEntry, ...prev])
+      setShowCreateForm(false)
+      event.currentTarget.reset()
       return
     }
 
-    const newEntry = {
-      id: `f-${Date.now()}`,
-      author: 'You',
-      area,
-      message,
-      rating,
-      date: new Date().toLocaleDateString([], { month: 'short', day: 'numeric' }),
+    try {
+      await set(ref(db, `feedback/threads/${id}`), newEntry)
+      setShowCreateForm(false)
+      setBoardError('')
+    } catch (err) {
+      console.error(err)
+      setBoardError('Could not create feedback item. Check database rules for /feedback.')
     }
 
-    setFeedbackEntries((prev) => [newEntry, ...prev])
     event.currentTarget.reset()
-    setRating(0)
-    setHoverRating(0)
-    setRatingTouched(false)
   }
 
-  const votePollOption = (pollId, optionId) => {
+  const votePollOption = async (pollId, optionId) => {
     if (votedPollIds.includes(pollId)) return
-    setPolls((prev) =>
-      prev.map((poll) => {
-        if (poll.id !== pollId) return poll
-        return {
-          ...poll,
-          options: poll.options.map((option) =>
-            option.id === optionId ? { ...option, votes: option.votes + 1 } : option,
-          ),
-        }
-      }),
-    )
-    setVotedPollIds((prev) => [...prev, pollId])
+    if (!db || !currentUser?.uid) {
+      setPolls((prev) =>
+        prev.map((poll) => {
+          if (poll.id !== pollId) return poll
+          return {
+            ...poll,
+            options: poll.options.map((option) =>
+              option.id === optionId ? { ...option, votes: option.votes + 1 } : option,
+            ),
+          }
+        }),
+      )
+      setVotedPollIds((prev) => [...prev, pollId])
+      return
+    }
+
+    try {
+      await runTransaction(ref(db, `feedback/polls/${pollId}`), (poll) => {
+        if (!poll) return poll
+        const next = { ...poll }
+        const options = Array.isArray(next.options) ? [...next.options] : Object.values(next.options || {})
+        const optionIndex = options.findIndex((o) => o?.id === optionId)
+        if (optionIndex < 0) return poll
+        const target = options[optionIndex]
+        options[optionIndex] = { ...target, votes: Number(target?.votes || 0) + 1 }
+        next.options = options
+        return next
+      })
+      await set(ref(db, `feedback/votes/${currentUser.uid}/${pollId}`), optionId)
+    } catch (err) {
+      console.error(err)
+      setBoardError('Could not submit vote. Check database rules for /feedback.')
+    }
+  }
+
+  const addReply = async (threadId, messageOverride = null) => {
+    const message = String(messageOverride ?? draftReplies[threadId] ?? '').trim()
+    if (!message) return
+
+    const reply = {
+      id: `r-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+      author: currentUser?.name || 'Student',
+      authorUid: currentUser?.uid || null,
+      message,
+      createdAt: Date.now(),
+    }
+
+    if (!db) {
+      setRepliesByThread((prev) => ({ ...prev, [threadId]: [...(prev[threadId] || []), reply] }))
+      setDraftReplies((prev) => ({ ...prev, [threadId]: '' }))
+      return
+    }
+
+    try {
+      await set(ref(db, `feedback/replies/${threadId}/${reply.id}`), reply)
+      setDraftReplies((prev) => ({ ...prev, [threadId]: '' }))
+    } catch (err) {
+      console.error(err)
+      setBoardError('Could not add reply. Check database rules for /feedback.')
+    }
+  }
+
+  const markAsWorking = async (threadId) => {
+    const quickText = `I can help with this item. — ${currentUser?.name || 'Student'}`
+    await addReply(threadId, quickText)
   }
 
   return (
@@ -126,11 +277,16 @@ function FeedbackPage() {
       <StatRow
         stats={[
           { icon: '📊', value: String(polls.length), label: 'Active Polls' },
-          { icon: '💬', value: String(feedbackEntries.length), label: 'Total Feedback' },
+          { icon: '🧩', value: String(feedbackThreads.length), label: 'Feedback Items' },
+          { icon: '💬', value: String(totalReplies), label: 'Total Replies' },
           { icon: '✅', value: String(votedPollIds.length), label: 'Polls Participated', tone: 'ok' },
-          { icon: '⭐', value: String(averageRating), label: 'Avg Rating' },
         ]}
       />
+      {boardError ? (
+        <p className="panel-error" role="alert">
+          {boardError}
+        </p>
+      ) : null}
 
       <section className="grid-two">
         <article className="card panel">
@@ -185,67 +341,71 @@ function FeedbackPage() {
         </article>
 
         <article className="card panel">
-          <h3>Submit Feedback</h3>
-          <form className="event-form" onSubmit={submitFeedback}>
-            <input name="area" placeholder="Area (e.g. Events, Quizzes)" required />
-            <textarea name="message" rows="4" placeholder="Share your feedback..." required />
-            <div className="star-rating-field">
-              <span className="star-rating-label" id="feedback-rating-label">
-                Rating
-              </span>
-              <div
-                className="star-rating-input"
-                role="group"
-                aria-labelledby="feedback-rating-label"
-                onMouseLeave={() => setHoverRating(0)}
-              >
-                {[1, 2, 3, 4, 5].map((n) => {
-                  const active = (hoverRating || rating) >= n
-                  return (
-                    <button
-                      key={n}
-                      type="button"
-                      className={`star-rating-star ${active ? 'is-on' : ''}`}
-                      onClick={() => {
-                        setRating(n)
-                        setRatingTouched(true)
-                      }}
-                      onMouseEnter={() => setHoverRating(n)}
-                      aria-label={`${n} out of 5 stars`}
-                    >
-                      ★
-                    </button>
-                  )
-                })}
-              </div>
-              {ratingTouched && !rating ? (
-                <small className="error-text">Select a rating from 1 to 5 stars.</small>
-              ) : (
-                <small className="star-rating-hint">{rating ? `${rating} / 5` : 'Tap a star to rate'}</small>
-              )}
-            </div>
-            <button type="submit">Submit Feedback</button>
-          </form>
+          <h3>Admin Controls</h3>
+          {isAdmin ? (
+            <>
+              <button type="button" onClick={() => setShowCreateForm((prev) => !prev)}>
+                {showCreateForm ? 'Close Create Form' : 'Add Feedback Item'}
+              </button>
+              {showCreateForm ? (
+                <form className="event-form" onSubmit={createFeedbackThread}>
+                  <input name="title" placeholder="Title" required />
+                  <input name="area" placeholder="Area (e.g. Events, Quizzes)" required />
+                  <textarea name="message" rows="4" placeholder="What should users discuss/work on?" required />
+                  <button type="submit">Create Item</button>
+                </form>
+              ) : null}
+            </>
+          ) : (
+            <p className="muted">Only admin can add new feedback items. You can still reply and collaborate below.</p>
+          )}
         </article>
       </section>
 
       <section className="card panel feedback-list-panel">
-        <h3>Recent Feedback</h3>
-        {feedbackEntries.map((entry) => (
-          <article key={entry.id} className="list-row">
-            <div>
-              <h4>{entry.area}</h4>
-              <p>{entry.message}</p>
-              <small>
-                {entry.author} • {entry.date}
-              </small>
-            </div>
-            <div className="row-meta">
-              <StarRatingDisplay value={entry.rating} />
-              <small className="star-rating-caption">{entry.rating}/5</small>
-            </div>
-          </article>
-        ))}
+        <h3>Feedback Workboard</h3>
+        {feedbackThreads.map((entry) => {
+          const replies = repliesByThread[entry.id] || []
+          return (
+            <article key={entry.id} className="list-row">
+              <div style={{ width: '100%' }}>
+                <h4>{entry.title || entry.area}</h4>
+                <p>{entry.message}</p>
+                <small>
+                  {entry.author} • {new Date(Number(entry.createdAt) || Date.now()).toLocaleDateString()} •{' '}
+                  {entry.createdByAdmin ? 'Admin item' : 'User item'}
+                </small>
+                <div className="member-strip" style={{ marginTop: 8 }}>
+                  <span className="tag">{entry.area}</span>
+                  <small>{replies.length} replies</small>
+                </div>
+                <div style={{ marginTop: 10 }}>
+                  {replies.map((reply) => (
+                    <p key={reply.id} className="muted" style={{ margin: '4px 0' }}>
+                      <strong>{reply.author}:</strong> {reply.message}
+                    </p>
+                  ))}
+                </div>
+                <div className="event-form" style={{ marginTop: 8 }}>
+                  <textarea
+                    rows="2"
+                    placeholder="Reply to this item..."
+                    value={draftReplies[entry.id] || ''}
+                    onChange={(e) => setDraftReplies((prev) => ({ ...prev, [entry.id]: e.target.value }))}
+                  />
+                  <div className="event-actions">
+                    <button type="button" onClick={() => addReply(entry.id)}>
+                      Reply
+                    </button>
+                    <button type="button" className="ghost-btn" onClick={() => markAsWorking(entry.id)}>
+                      I can work on this
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </article>
+          )
+        })}
       </section>
     </>
   )
